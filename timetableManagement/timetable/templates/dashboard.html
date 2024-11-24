@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Table Management System</title>
+<style>
+
+.year-1st {
+    background-color: #1b70df;
+}
+.year-2nd {
+    background-color: lightgreen;
+}
+.year-3rd {
+    background-color: orange;
+}
+.year-4th {
+    background-color: rgb(176, 211, 16);
+}
+.popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .popup-content {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .popup-content form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .popup-content button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .popup-content button:hover {
+        background-color: #0056b3;
+    }
+
+    .popup-content select, .popup-content input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+</style>
+    <script>
+        function openEditDialog(scheduleId, day, timeslot, year, subject, hall, lecturer) {
+            // Populate the popup form fields
+            document.getElementById('schedule_id').value = scheduleId;
+            document.getElementById('edit_day').value = day;
+            document.getElementById('edit_timeslot').value = timeslot;
+            document.getElementById('edit_year').value = year;
+            document.getElementById('edit_subject').value = subject;
+            document.getElementById('edit_hall').value = hall;
+            document.getElementById('edit_lecturer').value = lecturer;
+    
+            // Show the popup
+            document.getElementById('editDialog').style.display = 'block';
+        }
+    
+        function closePopup() {
+            // Hide the popup
+            document.getElementById('editDialog').style.display = 'none';
+        }
+
+    </script>
+    
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0;">
+    <div style="max-width: 1200px; margin: 20px auto; padding: 20px;">
+        <h1 style="text-align: center; color: #333;">Time Table Management System</h1>
+        {% if error %}
+        <div style="color: red; margin-bottom: 20px;">{{ error }}</div>
+        {% endif %}
+        <!-- Form for Adding Schedules -->
+        <form method="post" action="{% url 'add_schedule' %}" style="margin-bottom: 20px; padding: 20px; background-color: #fff; border: 1px solid #ddd; border-radius: 8px;">
+            {% csrf_token %}
+            <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                <div style="flex: 1; min-width: 150px;">
+                    <label for="day" style="display: block; font-weight: bold; margin-bottom: 5px;">Day</label>
+                    <select name="day" id="day" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="" disabled selected>Select a Day</option>
+                        {% for day in days %}
+                        <option value="{{ day }}">{{ day }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label for="timeslot" style="display: block; font-weight: bold; margin-bottom: 5px;">Time Slot</label>
+                    <select name="timeslot" id="timeslot" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="" disabled selected>Select a Time Slot</option>
+                        {% for slot in time_slots %}
+                        <option value="{{ slot.id }}">{{ slot.start_time }} - {{ slot.end_time }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label for="year" style="display: block; font-weight: bold; margin-bottom: 5px;">Year</label>
+                    <select name="year" id="year" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="" disabled selected>Select a Year</option>
+                        {% for year in years %}
+                        <option value="{{ year.id }}">{{ year.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label for="subject" style="display: block; font-weight: bold; margin-bottom: 5px;">Subject</label>
+                    <select name="subject" id="subject" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="" disabled selected>Select a Subject</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label for="hall" style="display: block; font-weight: bold; margin-bottom: 5px;">Hall</label>
+                    <select name="hall" id="hall" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="" disabled selected>Select a Hall</option>
+                        {% for hall in halls %}
+                        <option value="{{ hall.id }}">{{ hall.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label for="lecturer" style="display: block; font-weight: bold; margin-bottom: 5px;">Lecturer</label>
+                    <select name="lecturer" id="lecturer" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="" disabled selected>Select a Lecturer</option>
+                        {% for lecturer in lecturers %}
+                        <option value="{{ lecturer.id }}">{{ lecturer.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <button type="submit" style="width: 100%; padding: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+
+        <!-- Full Time Table -->
+        <table style="width: 100%; border-collapse: collapse; background-color: #fff; border: 1px solid #ddd;">
+            <thead>
+                <tr>
+                    <th style="padding: 10px; background-color: #f2f2f2; border: 1px solid #ddd;">Time Slot</th>
+                    {% for day in days %}
+                    <th style="padding: 10px; background-color: #f2f2f2; border: 1px solid #ddd; text-align: center;">{{ day }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for time_slot in time_slots %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ time_slot.start_time }} - {{ time_slot.end_time }}</td>
+                    {% for day in days %}
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center; vertical-align: top;">
+                        {% for schedule in schedules %}
+                            {% if schedule.timeslot.id == time_slot.id and schedule.day == day %}
+                            <div 
+    class="{% if schedule.year.name == '1 st year' %}year-1st
+           {% elif schedule.year.name == '2 nd year' %}year-2nd
+           {% elif schedule.year.name == '3 rd year' %}year-3rd
+           {% elif schedule.year.name == '4 th year' %}year-4th{% endif %}" 
+    style="padding: 5px; margin: 5px 0; border-radius: 4px; cursor: pointer; color: white;"
+    onclick="openEditDialog(
+        '{{ schedule.id }}', 
+        '{{ schedule.day }}', 
+        '{{ schedule.timeslot.id }}', 
+        '{{ schedule.year.id }}', 
+        '{{ schedule.subject.id }}', 
+        '{{ schedule.hall.id }}', 
+        '{{ schedule.lecturer.id }}'
+    )">
+    {{ schedule.year.name }}<br>{{ schedule.subject.name }}<br>{{ schedule.lecturer.name }}<br>{{ schedule.hall.name }}
+</div>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="editDialog" class="popup" style="display: none;">
+        <div class="popup-content">
+            <h3>Edit Schedule</h3>
+            <form method="post" action="{% url 'edit_schedule' %}">
+                {% csrf_token %}
+                <input type="hidden" name="schedule_id" id="schedule_id">
+                
+                <label for="day">Day</label>
+                <select name="day" id="edit_day" disabled>
+                    {% for day in days %}
+                    <option value="{{ day }}">{{ day }}</option>
+                    {% endfor %}
+                </select>
+    
+                <label for="timeslot">Time Slot</label>
+                <select name="timeslot" id="edit_timeslot" disabled>
+                    {% for slot in time_slots %}
+                    <option value="{{ slot.id }}">{{ slot.start_time }} - {{ slot.end_time }}</option>
+                    {% endfor %}
+                </select>
+    
+                <label for="year">Year</label>
+                <select name="year" id="edit_year" disabled>
+                    {% for year in years %}
+                    <option value="{{ year.id }}">{{ year.name }}</option>
+                    {% endfor %}
+                </select>
+    
+                <label for="subject">Subject</label>
+                <select name="subject" id="edit_subject" required>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+    
+                <label for="hall">Hall</label>
+                <select name="hall" id="edit_hall" required>
+                    {% for hall in halls %}
+                    <option value="{{ hall.id }}">{{ hall.name }}</option>
+                    {% endfor %}
+                </select>
+    
+                <label for="lecturer">Lecturer</label>
+                <select name="lecturer" id="edit_lecturer" required>
+                    {% for lecturer in lecturers %}
+                    <option value="{{ lecturer.id }}">{{ lecturer.name }}</option>
+                    {% endfor %}
+                </select>
+    
+                <button type="submit">Save</button>
+            </form>
+            <button onclick="closePopup()">Cancel</button>
+        </div>
+    </div>
+</body>
+</html>
